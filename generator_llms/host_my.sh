@@ -1,5 +1,5 @@
 # my version of `host.sh`
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=2  # one of the 3 cards, same as retriever
 
 model_name=Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4
 model_path=models/generator/$model_name  # local model path

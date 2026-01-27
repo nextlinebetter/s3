@@ -45,6 +45,7 @@ import re
 from s3.llm_agent.generation_s3 import LLMGenerationManager, GenerationConfig
 
 from tqdm import tqdm
+import ray
 
 
 WorkerType = Type[Worker]
@@ -906,19 +907,24 @@ class RayPPOTrainer(object):
                                 # generation_manager._save_zeroshot_answers(gen_config.zero_shot_store_file)
 
                             # final_gen_batch_output.batch.apply(lambda x: x.long(), inplace=True)
+                            # breakpoint()
                             for key in final_gen_batch_output.batch.keys():
                                 final_gen_batch_output.batch[key] = final_gen_batch_output.batch[key].long()
 
+                            # breakpoint()
                             with torch.no_grad():
                                 output = self.actor_rollout_wg.compute_log_prob(final_gen_batch_output)
                                 final_gen_batch_output = final_gen_batch_output.union(output)
 
                             # batch.non_tensor_batch['uid'] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))],
                             #                                         dtype=object)
+                            # breakpoint()
                             batch.non_tensor_batch['uid'] = batch.non_tensor_batch['index'].copy()
                                                 
                             # repeat to align with repeated responses in rollout
+                            # breakpoint()
                             batch = batch.repeat(repeat_times=self.config.actor_rollout_ref.rollout.n, interleave=True)
+                            # breakpoint()
                             batch = batch.union(final_gen_batch_output)
 
                         ####################
@@ -927,16 +933,20 @@ class RayPPOTrainer(object):
                         # balance the number of valid tokens on each dp rank.
                         # Note that this breaks the order of data inside the batch.
                         # Please take care when you implement group based adv computation such as GRPO and rloo
+                        # breakpoint()
                         self._balance_batch(batch, metrics=metrics)
 
                         # compute global_valid tokens
+                        # breakpoint()
                         batch.meta_info['global_token_num'] = torch.sum(batch.batch['attention_mask'], dim=-1).tolist()
 
                         # batch.batch.apply(lambda x, key: x.long() if key != "old_log_probs" else x, inplace=True, key=True)
+                        # breakpoint()
                         for key in batch.batch.keys():
                             if key != 'old_log_probs':
                                 batch.batch[key] = batch.batch[key].long()
 
+                        # breakpoint()
                         if self.use_reference_policy:
                             # compute reference log_prob
                             with _timer('ref', timing_raw):
@@ -944,11 +954,13 @@ class RayPPOTrainer(object):
                                 batch = batch.union(ref_log_prob)
 
                         # compute values
+                        # breakpoint()
                         if self.use_critic:
                             with _timer('values', timing_raw):
                                 values = self.critic_wg.compute_values(batch)
                                 batch = batch.union(values)
 
+                        # breakpoint()
                         with _timer('adv', timing_raw):
                             # compute scores. Support both model and function-based.
                             # We first compute the scores using reward model. Then, we call reward_fn to combine
@@ -1046,6 +1058,9 @@ class RayPPOTrainer(object):
                     #     return
                     
                 except Exception as e:
+                    print(type(e))
+                    import traceback
+                    traceback.print_exc()
                     print(f'Error in training loop: {e}, step {self.global_steps}, skipping this batch')
                     continue
                 

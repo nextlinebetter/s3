@@ -5,25 +5,32 @@ data_name=demo/nq_hotpotqa_train
 # RANDOM_SEED=${1:-3948}
 RANDOM_SEED=${1:-42}
 
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=0,1  # 2 of the 3 cards, different from retriever/generator
 export DATA_DIR=data/${data_name} # first download the data from https://huggingface.co/datasets/PeterJinGo/nq_hotpotqa_train
 
 WAND_PROJECT="SearchAgent"
+export WANDB_API_KEY=$(cat wandb_api.key)  # set your wandb api key in this file
 
-hf download Qwen/Qwen2.5-7B-Instruct-1M --local-dir models/agent/Qwen2.5-7B-Instruct-1M --cache-dir cache/huggingface/hub
+# base_model_name="Qwen/Qwen2.5-7B-Instruct-1M"
+base_model_name="Qwen/Qwen2.5-3B-Instruct"
+# base_model_name="Qwen/Qwen2.5-0.5B-Instruct"
+hf download $base_model_name --local-dir models/agent/$base_model_name --cache-dir cache/huggingface/hub
 
-export BASE_MODEL='models/agent/Qwen2.5-7B-Instruct-1M'
-# export BASE_MODEL='Qwen/Qwen2.5-7B-Instruct'
+export BASE_MODEL="models/agent/${base_model_name}"
 export EXPERIMENT_NAME="s3_8_3_3_${RANDOM_SEED}"
 export VLLM_ATTENTION_BACKEND=XFORMERS
+
+export GENERATOR_MODEL='models/generator/Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4'
+
+# export PYTORCH_CUDA_ALLOC_CONF=expandable_segments:True  # possibly reduce OOM
 
 PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     data.train_files=$DATA_DIR/train_e5_s3.parquet \
     data.val_files=$DATA_DIR/test_e5_s3.parquet \
     data.train_data_num=null \
     data.val_data_num=null \
-    data.train_batch_size=120 \
-    data.val_batch_size=15 \
+    data.train_batch_size=48 \
+    data.val_batch_size=6 \
     data.max_prompt_length=8000 \
     data.max_response_length=500 \
     data.max_start_length=2000 \
@@ -35,15 +42,15 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.model.enable_gradient_checkpointing=true \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.optim.lr_warmup_steps_ratio=0 \
-    actor_rollout_ref.actor.ppo_mini_batch_size=30 \
-    actor_rollout_ref.actor.ppo_micro_batch_size=15 \
+    actor_rollout_ref.actor.ppo_mini_batch_size=12 \
+    actor_rollout_ref.actor.ppo_micro_batch_size=6 \
     actor_rollout_ref.rollout.temperature=0.6 \
     actor_rollout_ref.actor.fsdp_config.param_offload=true \
-    actor_rollout_ref.rollout.log_prob_micro_batch_size=30 \
+    actor_rollout_ref.rollout.log_prob_micro_batch_size=6 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.4 \
-    actor_rollout_ref.ref.log_prob_micro_batch_size=30 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.3 \
+    actor_rollout_ref.ref.log_prob_micro_batch_size=6 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     actor_rollout_ref.actor.state_masking=true \
     critic.optim.lr=1e-5 \
@@ -51,7 +58,7 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     critic.optim.lr_warmup_steps_ratio=0.01 \
     critic.model.path=$BASE_MODEL \
     critic.model.enable_gradient_checkpointing=true \
-    critic.ppo_micro_batch_size=10 \
+    critic.ppo_micro_batch_size=4 \
     algorithm.kl_ctrl.kl_coef=0.001 \
     algorithm.no_think_rl=false \
     trainer.critic_warmup=0 \
@@ -59,7 +66,7 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     +trainer.val_only=false \
     +trainer.val_before_train=false \
     trainer.default_hdfs_dir=null \
-    trainer.n_gpus_per_node=5 \
+    trainer.n_gpus_per_node=2 \
     trainer.nnodes=1 \
     trainer.save_freq=50 \
     trainer.test_freq=1500 \
@@ -71,8 +78,15 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     trainer.default_local_dir=verl_checkpoints/$EXPERIMENT_NAME \
     +data.random_seed=$RANDOM_SEED \
     max_turns=3 \
-    +generator_llm="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4" \
-    +output_context_dir="data/output_sequences_s3_8_3_3_new" \
+    +generator_llm=$GENERATOR_MODEL \
+    +output_context_dir="data/demo/output_sequences_s3_8_3_3_new" \
     retriever.url="http://127.0.0.1:3000/retrieve" \
     retriever.topk=8 \
     2>&1 | tee train_logs/$EXPERIMENT_NAME.log
+
+    # critic.forward_max_token_len_per_gpu=20000 \
+    # critic.ppo_max_token_len_per_gpu=20000 \
+    # reward_model.forward_max_token_len_per_gpu=20000 \
+    # actor_rollout_ref.actor.ppo_max_token_len_per_gpu=10000 \
+    # actor_rollout_ref.ref.log_prob_max_token_len_per_gpu=10000 \
+    # actor_rollout_ref.rollout.log_prob_max_token_len_per_gpu=10000 \

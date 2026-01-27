@@ -6,14 +6,16 @@ from transformers import AutoTokenizer
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import re
-from generator_llms.claude_api import get_claude_response
+# from generator_llms.claude_api import get_claude_response
+from generator_llms.qwen_api import generate_answer  # Use Aliyun API instead. Replace every `get_claude_response` call with `generate_answer`
+
 
 # Load matching tokenizer locally
 # MODEL = "generator_llms/Qwen2.5-14B-Instruct-Q5_K_M.gguf"  
 # MODEL = "Qwen/Qwen2.5-7B-Instruct-GPTQ-Int4"
 # TOKENIZER_MODEL = "Qwen/Qwen2.5-7B-Instruct-GPTQ-Int4"
-MODEL = "Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4"
-TOKENIZER_MODEL = "Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4"
+MODEL = os.environ.get("GENERATOR_MODEL", "models/generator/Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4")
+TOKENIZER_MODEL = os.environ.get("GENERATOR_MODEL", "models/generator/Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4")
  
 tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL)
 
@@ -21,7 +23,7 @@ tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL)
 MAX_CONCURRENT_REQUESTS = 4  # Adjust based on your server's capacity
 request_semaphore = threading.Semaphore(MAX_CONCURRENT_REQUESTS)
 
-def generate_answer(context: str, prompt: str, max_retries=3, model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> str:
+def generate_answer(context: str, prompt: str, max_retries=3, model=MODEL) -> str:
     """
     Generate an answer using the local LLM given context and prompt.
     
@@ -43,7 +45,7 @@ Contexts:
 Question: {prompt}
 
 Important: You MUST directly answer the question without any other text and thinking."""
-        return get_claude_response(natural_prompt)
+        return generate_answer(natural_prompt)
         
     headers = {"Content-Type": "application/json"}
     
@@ -105,7 +107,7 @@ Important: You MUST directly answer the question without any other text and thin
     return messages
 
 
-def generate_answer_zero_shot(prompt: str, model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> str:
+def generate_answer_zero_shot(prompt: str, model=MODEL) -> str:
     """
     Generate an answer using the local LLM with a zero-shot prompt.
     
@@ -120,7 +122,7 @@ def generate_answer_zero_shot(prompt: str, model="Qwen/Qwen2.5-14B-Instruct-GPTQ
         natural_prompt = f"""Important: You MUST directly answer the question without any other text and thinking.
 
 Question: {prompt}"""
-        return get_claude_response(natural_prompt)
+        return generate_answer(natural_prompt)
         
     headers = {"Content-Type": "application/json"}
     
@@ -173,12 +175,12 @@ def format_zero_shot_chat_messages(question: str) -> list:
     return messages
 
 
-def call_llm(prompt: str, model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> str:
+def call_llm(prompt: str, model=MODEL) -> str:
     """
     Call the LLM with a simple prompt and get a short response.
     """
     if "claude" in model.lower():
-        return get_claude_response(prompt)
+        return generate_answer(prompt)
         
     # Prepare the payload for the API call
     headers = {"Content-Type": "application/json"}
@@ -213,7 +215,7 @@ def call_llm(prompt: str, model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> str:
         print(f"Error generating answer: {e}")
         return ""
 
-def check_if_response_is_correct_llm(response: str, gold_answers: list[str], model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> bool:
+def check_if_response_is_correct_llm(response: str, gold_answers: list[str], model=MODEL) -> bool:
     """
     Check if the generated answer is correct by comparing it to the gold answers.
     
@@ -242,7 +244,7 @@ def check_if_response_is_correct_llm(response: str, gold_answers: list[str], mod
         else:
             return False
 
-def check_if_context_contains_golden_answers(context: str, gold_answers: list[str], model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> bool:
+def check_if_context_contains_golden_answers(context: str, gold_answers: list[str], model=MODEL) -> bool:
     """
     Check if any of the golden answers are semantically included in the context using soft matching.
     
@@ -282,14 +284,14 @@ Please directly answer with 'yes' or 'no'."""
         else:
             return False
 
-def generate_answer_with_semaphore(context: str, prompt: str, model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> str:
+def generate_answer_with_semaphore(context: str, prompt: str, model=MODEL) -> str:
     """
     Generate an answer with rate limiting using a semaphore.
     """
     with request_semaphore:
         return generate_answer(context, prompt, model)
 
-def process_batch(requests: list[tuple[str, str]], max_workers=4, model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> list[str]:
+def process_batch(requests: list[tuple[str, str]], max_workers=4, model=MODEL) -> list[str]:
     """
     Process a batch of requests with rate limiting.
     
@@ -343,7 +345,7 @@ Important:
     
     return messages
 
-def generate_answer_cot(prompt: str, model="Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4") -> str:
+def generate_answer_cot(prompt: str, model=MODEL) -> str:
     """
     Generate an answer using the local LLM with Chain-of-Thought reasoning.
     
@@ -375,7 +377,7 @@ Important:
 - The answer should be concise and directly answer the question
 
 Question: {prompt}"""
-        full_response = get_claude_response(natural_prompt)
+        full_response = generate_answer(natural_prompt)
         
         # Extract answer from tags if present
         answer_match = re.search(r'<answer>(.*?)</answer>', full_response, re.DOTALL)

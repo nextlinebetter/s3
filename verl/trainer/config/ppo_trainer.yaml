@@ -114,6 +114,7 @@ critic:
         # transformer_layer_cls_to_wrap: None
         min_num_params: 0
       fsdp_size: -1
+      model_dtype: bfloat16  # float32 otherwise
   ppo_mini_batch_size: ${actor_rollout_ref.actor.ppo_mini_batch_size}
   ppo_micro_batch_size: 64
   forward_micro_batch_size: ${critic.ppo_micro_batch_size}

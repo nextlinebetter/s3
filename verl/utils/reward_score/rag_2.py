@@ -436,7 +436,10 @@ def compute_score_rag(solution_str, ground_truth, zeroshot_answers, data_source,
             seen_docs.add(doc_key)
             context_with_info += f"Doc {doc_id} (Title: {title})\n{text}\n\n"
             doc_id += 1
-        
+    
+    # add generator force assignment
+    model = os.environ.get("GENERATOR_MODEL", "models/generator/Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4")
+
     if use_utility_score:
         if question in zeroshot_answers[data_source]:
             answer_zeroshot = zeroshot_answers[data_source][question]['answer']
@@ -444,11 +447,11 @@ def compute_score_rag(solution_str, ground_truth, zeroshot_answers, data_source,
         # answer_zeroshot_score = check_answer_correct(answer=answer_zeroshot, golden_answers=golden_answers)
         else:
             print(f"[Warning] No zeroshot answer found for question: {question}")
-            answer_zeroshot = generate_answer_zero_shot(prompt=question)
-            answer_zeroshot_score = check_answer_correct(answer=answer_zeroshot, golden_answers=golden_answers)
+            answer_zeroshot = generate_answer_zero_shot(prompt=question, model=model)  # add force assignment
+            answer_zeroshot_score = check_answer_correct(answer=answer_zeroshot, golden_answers=golden_answers, model=model)  # add force assignment
     
-    answer_context = generate_answer(prompt=question, context=context_with_info)
-    answer_context_score = check_answer_correct(answer=answer_context, golden_answers=golden_answers)
+    answer_context = generate_answer(prompt=question, context=context_with_info, model=model)  # add force assignment
+    answer_context_score = check_answer_correct(answer=answer_context, golden_answers=golden_answers, model=model)  # add force assignment
     generation_score = answer_context_score
         
     if use_utility_score:

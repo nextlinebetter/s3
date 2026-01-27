@@ -18,7 +18,7 @@ import random
 
 from verl.utils.reward_score.rag_2 import output_sequence
 
-USE_UTILITY_SCORE = True
+USE_UTILITY_SCORE = False  # change to False
 USE_GENERATION_SCORE = True
 
 

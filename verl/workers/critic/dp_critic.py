@@ -45,6 +45,7 @@ class DataParallelPPOCritic(BasePPOCritic):
         self.use_remove_padding = self.config.model.get('use_remove_padding', False)
         print(f'Critic use_remove_padding={self.use_remove_padding}')
 
+        print(f"ppo_mini_batch_size={self.config.ppo_mini_batch_size}, ppo_micro_batch_size={self.config.ppo_micro_batch_size}")
         assert self.config.ppo_mini_batch_size % self.config.ppo_micro_batch_size == 0
         self.gradient_accumulation = self.config.ppo_mini_batch_size // self.config.ppo_micro_batch_size
 

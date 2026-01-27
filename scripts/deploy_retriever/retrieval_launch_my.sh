@@ -1,5 +1,6 @@
 # my version of `retrieval_launch.sh`
-export CUDA_VISIBLE_DEVICES=0
+# export CUDA_VISIBLE_DEVICES=0,1,2  # all of the 3 cards, only in precompute rag_cache step
+export CUDA_VISIBLE_DEVICES=0  # one of the 3 cards, same as generator
 # export HF_ENDPOINT=https://hf-mirror.com  # alter: use clash instead
 
 file_path=data/demo
@@ -18,6 +19,6 @@ python s3/search/retrieval_server_my.py --index_path $index_file \
                                             --topk 12 \
                                             --retriever_name $retriever_name \
                                             --retriever_model $retriever_path \
-                                            --port 3000
+                                            --port 3000 \
+                                            --faiss_gpu  # enable faiss gpu, only in precompute rag_cache step
                                             # --port 7000
-                                            # --faiss_gpu

@@ -245,6 +245,7 @@ class LLMGenerationManager:
         padding_size = num_gpus - remainder
         padded_batch = {}
         
+        # breakpoint()
         for k, v in active_batch.batch.items():
             # Use first sequence as padding template
             pad_sequence = v[0:1].repeat(padding_size, *[1] * (len(v.shape) - 1))
@@ -254,6 +255,7 @@ class LLMGenerationManager:
         for key in padded_active_batch.batch.keys():
             padded_active_batch.batch[key] = padded_active_batch.batch[key].long()
 
+        # breakpoint()
         # Generate with padded batch
         padded_output = self.actor_rollout_wg.generate_sequences(padded_active_batch)
 
@@ -308,6 +310,7 @@ class LLMGenerationManager:
                 print(f"No <question>...</question> tags found in the initial input {input_text}")
 
         # Main generation loop
+        # breakpoint()
         for step in range(self.config.max_turns):
             if not active_mask.sum():
                 break
@@ -323,6 +326,7 @@ class LLMGenerationManager:
             })            
             gen_output = self._generate_with_gpu_padding(rollings_active)
 
+            # breakpoint()
             # Process outputs 
             meta_info = gen_output.meta_info            
             responses_ids, responses_str, queries, search_complete_flags = self._postprocess_responses(gen_output.batch['responses'])
@@ -451,6 +455,7 @@ class LLMGenerationManager:
             
         
         search_queries = [content for action, content in zip(cur_actions, contents) if action == 'search']
+        # breakpoint()
         if do_search and search_queries:
             search_results = self.batch_search(search_queries)
             assert len(search_results) == sum([1 for action in cur_actions if action == 'search'])
