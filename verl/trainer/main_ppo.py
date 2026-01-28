@@ -18,7 +18,7 @@ import random
 
 from verl.utils.reward_score.rag_2 import output_sequence
 
-USE_UTILITY_SCORE = False  # change to False
+USE_UTILITY_SCORE = True  # can change to False
 USE_GENERATION_SCORE = True
 
 
@@ -30,7 +30,8 @@ class RewardManager():
     """The reward manager.
     """#data/Qwen_Qwen2.5-14B-Instruct-GPTQ-Int4/train/zeroshot_answers.json
 
-    def __init__(self, tokenizer, num_examine, format_score=0., zeroshot_cache_file="data/rag_cache/rag_cache.json", val_only=False, output_context_dir=None) -> None:
+    # change default zeroshot_cache_file path
+    def __init__(self, tokenizer, num_examine, format_score=0., zeroshot_cache_file="data/demo/rag_cache/rag_cache.json", val_only=False, output_context_dir=None) -> None:
         self.tokenizer = tokenizer
         self.num_examine = num_examine  # the number of batches of decoded responses to print to the console
         self.format_score = format_score

@@ -62,17 +62,25 @@
 
 ## Table of Contents
 
-- [📦 Installation](#-installation)
-- [💡 Preparation](#-preparation)
-- [🏋️ Run Training](https://github.com/pat-jj/s3?tab=readme-ov-file#%EF%B8%8F-run-training)
-- [🔍 Run Search/Retrieval](https://github.com/pat-jj/s3?tab=readme-ov-file#-run-searchretrieval)
-- [📈 Run Evaluation](#-run-evaluation)
+- [s3 - Efficient Yet Effective Search Agent Training via RL](#s3---efficient-yet-effective-search-agent-training-via-rl)
+  - [What is s3?](#what-is-s3)
+  - [Table of Contents](#table-of-contents)
+  - [📦 Installation](#-installation)
+  - [💡 Preparation](#-preparation)
+  - [🏋️ Run Training](#️-run-training)
+  - [🔍 Run Search/Retrieval](#-run-searchretrieval)
+  - [📈 Run Evaluation](#-run-evaluation)
+  - [Q\&A](#qa)
+    - [Customized Data?](#customized-data)
+    - [Reproducing Results?](#reproducing-results)
+  - [Citation](#citation)
 
 ## 📦 Installation
 
 **Searcher & Generator Environment**
 ```bash
 conda create -n s3 python=3.9
+# conda config --env --set channel_priority strict  # no need since s3 uses pip install only
 # install torch [or you can skip this step and let vllm to install the correct version for you]
 pip install torch==2.4.0 --index-url https://download.pytorch.org/whl/cu121
 # install vllm
@@ -97,11 +105,9 @@ pip install wandb IPython matplotlib huggingface_hub
 ```bash
 conda create -n ret python=3.10
 conda activate ret
-
-conda config --env --set channel_priority strict
+conda config --env --set channel_priority strict  # important for miniforge
 
 conda install pytorch==2.4.0 torchvision==0.19.0 torchaudio==2.4.0 pytorch-cuda=12.1 -c pytorch -c nvidia
-
 python -c "import torch; print(torch.version.cuda)"
 
 pip install transformers datasets pyserini

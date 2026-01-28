@@ -19,6 +19,6 @@ python s3/search/retrieval_server_my.py --index_path $index_file \
                                             --topk 12 \
                                             --retriever_name $retriever_name \
                                             --retriever_model $retriever_path \
-                                            --port 3000 \
-                                            --faiss_gpu  # enable faiss gpu, only in precompute rag_cache step
+                                            --port 3000
+                                            # --faiss_gpu  # enable faiss gpu, only in precompute rag_cache step
                                             # --port 7000

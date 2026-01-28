@@ -27,3 +27,13 @@ def generate_answer(prompt: str, max_retries: int = 3) -> str:
                 time.sleep(1)
             else:
                 raise Exception(f"Failed to generate answer after {max_retries} attempts: {str(e)}")
+
+
+def main():
+    prompt = "Hello, how are you?"
+    answer = generate_answer(prompt)
+    print("Answer:", answer)
+
+
+if __name__ == "__main__":
+    main()

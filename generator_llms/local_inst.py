@@ -6,18 +6,18 @@ from transformers import AutoTokenizer
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import re
-# from generator_llms.claude_api import get_claude_response
-from generator_llms.qwen_api import generate_answer  # Use Aliyun API instead. Replace every `get_claude_response` call with `generate_answer`
+from generator_llms.claude_api import get_claude_response
+# from generator_llms.qwen_api import generate_answer  # Use Aliyun API instead. Replace every `get_claude_response` call with `generate_answer`
 
 
 # Load matching tokenizer locally
 # MODEL = "generator_llms/Qwen2.5-14B-Instruct-Q5_K_M.gguf"  
 # MODEL = "Qwen/Qwen2.5-7B-Instruct-GPTQ-Int4"
 # TOKENIZER_MODEL = "Qwen/Qwen2.5-7B-Instruct-GPTQ-Int4"
-MODEL = os.environ.get("GENERATOR_MODEL", "models/generator/Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4")
-TOKENIZER_MODEL = os.environ.get("GENERATOR_MODEL", "models/generator/Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4")
+MODEL = os.environ.get("GENERATOR_MODEL", "claude")
+TOKENIZER_MODEL = os.environ.get("GENERATOR_MODEL", "claude")
  
-tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL)
+# tokenizer = AutoTokenizer.from_pretrained(TOKENIZER_MODEL)  # not using local tokenizer for now
 
 # Create a semaphore to limit concurrent requests
 MAX_CONCURRENT_REQUESTS = 4  # Adjust based on your server's capacity
@@ -45,7 +45,7 @@ Contexts:
 Question: {prompt}
 
 Important: You MUST directly answer the question without any other text and thinking."""
-        return generate_answer(natural_prompt)
+        return get_claude_response(natural_prompt)
         
     headers = {"Content-Type": "application/json"}
     
@@ -122,7 +122,7 @@ def generate_answer_zero_shot(prompt: str, model=MODEL) -> str:
         natural_prompt = f"""Important: You MUST directly answer the question without any other text and thinking.
 
 Question: {prompt}"""
-        return generate_answer(natural_prompt)
+        return get_claude_response(natural_prompt)
         
     headers = {"Content-Type": "application/json"}
     
@@ -180,7 +180,7 @@ def call_llm(prompt: str, model=MODEL) -> str:
     Call the LLM with a simple prompt and get a short response.
     """
     if "claude" in model.lower():
-        return generate_answer(prompt)
+        return get_claude_response(prompt)
         
     # Prepare the payload for the API call
     headers = {"Content-Type": "application/json"}
@@ -377,7 +377,7 @@ Important:
 - The answer should be concise and directly answer the question
 
 Question: {prompt}"""
-        full_response = generate_answer(natural_prompt)
+        full_response = get_claude_response(natural_prompt)
         
         # Extract answer from tags if present
         answer_match = re.search(r'<answer>(.*?)</answer>', full_response, re.DOTALL)

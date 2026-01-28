@@ -25,6 +25,7 @@ bash scripts/precompute_my.sh  # this step will take a while, as it will precomp
 
 # alter: download precomputed cache instead of running the above step
 hf download --repo-type dataset pat-jj/s3_processed_data --include "*e5_s3.parquet" --local-dir data/demo/nq_hotpotqa_train --cache-dir cache/huggingface/datasets
+hf download --repo-type dataset pat-jj/s3_processed_data --include "rag_cache.json" --local-dir data/demo/rag_cache --cache-dir cache/huggingface/datasets
 
 # 3) Run Training
 # deploy retriever

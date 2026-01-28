@@ -18,6 +18,8 @@ import random
 from pyserini.eval.evaluate_dpr_retrieval import has_answers, SimpleTokenizer
 from generator_llms.local_inst import *
 
+import os
+
 _tokenizer = SimpleTokenizer()
 
 
@@ -438,7 +440,7 @@ def compute_score_rag(solution_str, ground_truth, zeroshot_answers, data_source,
             doc_id += 1
     
     # add generator force assignment
-    model = os.environ.get("GENERATOR_MODEL", "models/generator/Qwen/Qwen2.5-14B-Instruct-GPTQ-Int4")
+    model = os.environ.get("GENERATOR_MODEL", "claude")
 
     if use_utility_score:
         if question in zeroshot_answers[data_source]:
