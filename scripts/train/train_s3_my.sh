@@ -30,8 +30,8 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     data.val_files=$DATA_DIR/test_e5_s3.parquet \
     data.train_data_num=null \
     data.val_data_num=null \
-    data.train_batch_size=1 \
-    data.val_batch_size=1 \
+    data.train_batch_size=36 \
+    data.val_batch_size=36 \
     data.max_prompt_length=8000 \
     data.max_response_length=500 \
     data.max_start_length=2000 \
@@ -43,15 +43,15 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     actor_rollout_ref.model.enable_gradient_checkpointing=true \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.optim.lr_warmup_steps_ratio=0 \
-    actor_rollout_ref.actor.ppo_mini_batch_size=1 \
-    actor_rollout_ref.actor.ppo_micro_batch_size=1 \
+    actor_rollout_ref.actor.ppo_mini_batch_size=9 \
+    actor_rollout_ref.actor.ppo_micro_batch_size=3 \
     actor_rollout_ref.rollout.temperature=0.6 \
     actor_rollout_ref.actor.fsdp_config.param_offload=true \
-    actor_rollout_ref.rollout.log_prob_micro_batch_size=1 \
+    actor_rollout_ref.rollout.log_prob_micro_batch_size=18 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=1 \
     actor_rollout_ref.rollout.name=vllm \
-    actor_rollout_ref.rollout.gpu_memory_utilization=0.3 \
-    actor_rollout_ref.ref.log_prob_micro_batch_size=1 \
+    actor_rollout_ref.rollout.gpu_memory_utilization=0.4 \
+    actor_rollout_ref.ref.log_prob_micro_batch_size=18 \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     actor_rollout_ref.actor.state_masking=true \
     critic.optim.lr=1e-5 \
@@ -59,7 +59,7 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     critic.optim.lr_warmup_steps_ratio=0.01 \
     critic.model.path=$BASE_MODEL \
     critic.model.enable_gradient_checkpointing=true \
-    critic.ppo_micro_batch_size=1 \
+    critic.ppo_micro_batch_size=3 \
     algorithm.kl_ctrl.kl_coef=0.001 \
     algorithm.no_think_rl=false \
     trainer.critic_warmup=0 \
@@ -91,3 +91,17 @@ PYTHONUNBUFFERED=1 python3 -m verl.trainer.main_ppo \
     # actor_rollout_ref.actor.ppo_max_token_len_per_gpu=10000 \
     # actor_rollout_ref.ref.log_prob_max_token_len_per_gpu=10000 \
     # actor_rollout_ref.rollout.log_prob_max_token_len_per_gpu=10000 \
+
+    # Note: 
+    # - Set tensor_model_parallel_size always to 1 in single GPU case
+    # - Set the number of updates per batch (train_batch_size / ppo_mini_batch_size) between 4 and 8 is a common practice
+    # - ppo_micro_batch_size is for gradient accumulation and should be paid most attention to, to avoid OOM. Set to 3 is well-tested.
+    # - Increasing log_prob_micro_batch_size helps speed up forward process without affecting backward, but it can cause OOM as well
+    # - xxx_batch_size and xxx_batch_size_per_gpu are equivalent in single GPU case, with the former standing for global size
+    # - rollout.gpu_memory_utilization controls the fraction of GPU memory used for model weights and KV cache during rollout,
+    #   and it will be released or offloaded before the backward process begins, so it does not overlap with the peak memory usage during backward.
+    # - According to the last comment, increasing gpu_momery_utilization can help solve OOM during forward.
+    # - Console printing out 'Active_traj_num' means the end of `gen` (run_llm_loop) process, which is the most time-consuming step.
+    # - The second most time-consuming step is `adv`, which can possibly be speeded up by making API inference calls in batch. [TODO]
+    # - Console printing out 'Question: ... ' means the end of compute_score_rag process (big part of `adv`), meaning API inference calls are over
+    # - Checking train_logs/*.log is the first step when encountered with OOM
